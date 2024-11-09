@@ -1,0 +1,62 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id          Int      @id @default(autoincrement())
+  email       String   @unique
+  password    String
+  role        Role
+  name        String?
+  applications Application[]
+}
+
+model Job {
+  id             Int       @id @default(autoincrement())
+  title          String
+  company        String
+  type           String?
+  location       String?
+  package        String?
+  deadline       DateTime
+  cgpaCutoff     Float?
+  description    String?
+  applicationLink String?
+  createdAt      DateTime @default(now())
+  status         JobStatus @default(open)
+
+  applications   Application[]
+}
+
+model Application {
+  id         Int       @id @default(autoincrement())
+  studentId  Int
+  jobId      Int
+  status     ApplicationStatus @default(pending)
+  appliedAt  DateTime @default(now())
+
+  student    User      @relation(fields: [studentId], references: [id])
+  job        Job       @relation(fields: [jobId], references: [id])
+}
+
+// Enum Definitions
+enum Role {
+  admin
+  student
+}
+
+enum JobStatus {
+  open
+  closed
+}
+
+enum ApplicationStatus {
+  pending
+  approved
+  rejected
+}
