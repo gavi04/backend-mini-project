@@ -11,16 +11,44 @@ app.use(express.json());
 app.use(cors());
 // Create a User
 app.post('/signup', async (req, res) => {
-  const { email, password, role, name } = req.body;
+  const { email, password,  name } = req.body;
   try {
     const user = await prisma.user.create({
-      data: { email, password, role, name },
+      data: { email, password,  name },
     });
     res.json(user);
   } catch (error) {
     res.status(400).json({ error: error.message });
   }
 });
+//login for admin
+app.post('/adminlogin', async (req, res) => {
+  const { email, password } = req.body;
+  
+  try {
+    // Find user by email
+    const user = await prisma.admin.findUnique({
+      where: { email },
+      select: { id: true, email: true,  password: true },  // Don't include password
+    });
+
+    if (!user || user.password !== password) {
+      return res.status(400).json({ error: 'Invalid email or password' });
+    }
+
+    // Create JWT token
+    const token = jwt.sign(
+      { userId: user.id, email: user.email },
+      JWT_SECRET
+    );
+
+    // Return the token to the client
+    res.json({ message: 'Login successful', token });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+   
 // Login Endpoint with JWT
 app.post('/login', async (req, res) => {
     const { email, password } = req.body;
@@ -29,7 +57,7 @@ app.post('/login', async (req, res) => {
       // Find user by email
       const user = await prisma.user.findUnique({
         where: { email },
-        select: { id: true, email: true, role: true, password: true },  // Don't include password
+        select: { id: true, email: true,  password: true },  // Don't include password
       });
   
       if (!user || user.password !== password) {
@@ -38,7 +66,7 @@ app.post('/login', async (req, res) => {
   
       // Create JWT token
       const token = jwt.sign(
-        { userId: user.id, email: user.email, role: user.role },
+        { userId: user.id, email: user.email },
         JWT_SECRET
       );
   
@@ -84,20 +112,63 @@ app.get('/jobs', async (req, res) => {
     res.status(500).json({ error: error.message });
   }
 });
-
+////////////////////////////////////////////////////////////////////////////////////
 // Get all Applications by User
+// app.get('/users/:id/applications', async (req, res) => {
+//   const { id } = req.params;
+//   try {
+//     const applications = await prisma.application.findMany({
+//       where: { studentId: parseInt(id) },
+//       include: { job: true },
+//     });
+//     res.json(applications);
+//   } catch (error) {
+//     res.status(500).json({ error: error.message });
+//   }
+// });
+///////////////////////////////////////////////////////////////
 app.get('/users/:id/applications', async (req, res) => {
   const { id } = req.params;
   try {
     const applications = await prisma.application.findMany({
       where: { studentId: parseInt(id) },
-      include: { job: true },
+      include: {
+        job: {
+          select: {
+            id: true,
+            title: true,
+            company: true,
+            deadline: true, // Ensure deadline is selected
+            status: true
+          }
+        },
+        student: true // To also include the user details
+      },
     });
-    res.json(applications);
+
+    
+   
+
+    // If the `appliedAt` field is not appearing in the response, you can manually format it
+    const formattedApplications = applications.map(application => {
+      return {
+        ...application,
+        appliedAt: new Date(application.appliedAt).toLocaleString(), // Format appliedAt date
+        job: {
+          ...application.job,
+          deadline: new Date(application.job.deadline).toLocaleDateString('en-US'), // Format deadline date
+        }
+      };
+    });
+
+    res.json(formattedApplications);
   } catch (error) {
+    console.error(error); // Log error for debugging
     res.status(500).json({ error: error.message });
   }
 });
+
+///////////////////////////////////////////////////
 
 // Update Application Status
 app.patch('/applications/:id', async (req, res) => {
@@ -115,17 +186,36 @@ app.patch('/applications/:id', async (req, res) => {
 });
 
 // Delete a Job
+// app.delete('/jobs/:id', async (req, res) => {
+//   const { id } = req.params;
+//   try {
+//     const job = await prisma.job.delete({
+//       where: { id: parseInt(id) },
+//     });
+//     res.json(job);
+//   } catch (error) {
+//     res.status(400).json({ error: error.message });
+//   }
+// });
 app.delete('/jobs/:id', async (req, res) => {
   const { id } = req.params;
   try {
-    const job = await prisma.job.delete({
-      where: { id: parseInt(id) },
+    // Delete related applications first
+    await prisma.application.deleteMany({
+      where: { jobId: parseInt(id) }
     });
-    res.json(job);
+
+    // Then delete the job
+    const job = await prisma.job.delete({
+      where: { id: parseInt(id) }
+    });
+
+    res.status(200).json({ message: 'Job and related applications deleted successfully', job });
   } catch (error) {
-    res.status(400).json({ error: error.message });
+    res.status(500).json({ error: error.message });
   }
 });
+
 
 const PORT = 3000;
 app.listen(PORT, () => {

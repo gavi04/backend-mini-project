@@ -11,9 +11,13 @@ model User {
   id          Int      @id @default(autoincrement())
   email       String   @unique
   password    String
-  role        Role
   name        String?
   applications Application[]
+}
+model Admin{
+  id         Int @id@default(autoincrement())
+  email      String @unique
+  password   String
 }
 
 model Job {
@@ -24,7 +28,7 @@ model Job {
   location       String?
   package        String?
   deadline       DateTime
-  cgpaCutoff     Float?
+  cgpaCutoff     String?
   description    String?
   applicationLink String?
   createdAt      DateTime @default(now())
@@ -45,10 +49,7 @@ model Application {
 }
 
 // Enum Definitions
-enum Role {
-  admin
-  student
-}
+
 
 enum JobStatus {
   open
