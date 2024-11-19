@@ -61,3 +61,116 @@ enum ApplicationStatus {
   approved
   rejected
 }
+
+
+
+
+
+
+
+
+// generator client {
+//   provider = "prisma-client-js"
+// }
+
+// datasource db {
+//   provider = "postgresql"
+//   url      = env("DATABASE_URL")
+// }
+
+// model User {
+//   id            Int           @id @default(autoincrement())
+//   email         String        @unique
+//   password      String
+//   name          String?
+//   applications  Application[]
+//   hackathonApplications HackathonApplication[]
+// }
+
+// model Admin {
+//   id       Int    @id @default(autoincrement())
+//   email    String @unique
+//   password String
+// }
+
+// model Job {
+//   id             Int           @id @default(autoincrement())
+//   title          String
+//   company        String
+//   type           String?
+//   location       String?
+//   package        String?
+//   deadline       DateTime
+//   cgpaCutoff     String?
+//   description    String?
+//   applicationLink String?
+//   createdAt      DateTime      @default(now())
+//   status         JobStatus     @default(open)
+//   applications   Application[]
+// }
+
+// model Hackathon {
+//   id              Int       @id @default(autoincrement())
+//   title           String
+//   description     String
+//   startDate       DateTime
+//   endDate         DateTime
+//   location        String
+//   mode            HackathonMode
+//   maxParticipants Int
+//   applicationDeadline DateTime
+//   organizerName   String
+//   organizerEmail  String
+//   prizePool       String?
+//   requirements    String?
+//   createdAt       DateTime @default(now())
+//   status          HackathonStatus @default(open)
+//   applications    HackathonApplication[]
+// }
+
+// model Application {
+//   id         Int               @id @default(autoincrement())
+//   studentId  Int
+//   jobId      Int
+//   status     ApplicationStatus @default(pending)
+//   appliedAt  DateTime         @default(now())
+//   student    User             @relation(fields: [studentId], references: [id])
+//   job        Job              @relation(fields: [jobId], references: [id])
+// }
+
+// model HackathonApplication {
+//   id           Int                    @id @default(autoincrement())
+//   hackathonId  Int
+//   studentId    Int
+//   teamName     String?
+//   teamSize     Int                    @default(1)
+//   projectIdea  String?
+//   status       ApplicationStatus      @default(pending)
+//   appliedAt    DateTime              @default(now())
+//   student      User                  @relation(fields: [studentId], references: [id])
+//   hackathon    Hackathon             @relation(fields: [hackathonId], references: [id])
+// }
+
+// enum JobStatus {
+//   open
+//   closed
+// }
+
+// enum ApplicationStatus {
+//   pending
+//   approved
+//   rejected
+// }
+
+// enum HackathonStatus {
+//   open
+//   ongoing
+//   completed
+//   cancelled
+// }
+
+// enum HackathonMode {
+//   inPerson
+//   online
+//   hybrid
+// }
