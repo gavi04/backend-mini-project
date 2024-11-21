@@ -91,17 +91,99 @@ app.post('/jobs', async (req, res) => {
 });
 
 // Create an Application
+// app.post('/applications', async (req, res) => {
+//   const { studentId, jobId, status } = req.body;
+//   try {
+//     //check for cgpa cuttoff/////
+//      const eligible = await prisma.user.findUnique({
+//       where:{
+//         id:studentId,
+//       },
+//       select:{
+//         cgpa:true
+//       }
+//      })
+//      const cgpa = eligible.cgpa;
+
+//      const check = await prisma.job.findUnique({
+//       where:{
+//         id:jobId
+//       },
+//       select :{
+//         cgpaCutoff:true
+//       }
+//      })
+//      const cutoff = check.cgpaCutoff;
+//      if (cgpa <= cgpaCutoff) {
+//       return res.status(400).json({
+//         error: 'Student CGPA is below the required cutoff',
+//         data: { studentCgpa: cgpa, jobCgpaCutoff: cgpaCutoff },
+//       });
+//     }
+
+
+//     ////////////////////////////
+
+//     const application = await prisma.application.create({
+//       data: { studentId, jobId, status },
+//     });
+//     res.json(application);
+//   } catch (error) {
+//     res.status(400).json({ error: error.message });
+//   }
+// });
+
+
+/// crete new application ///////////
 app.post('/applications', async (req, res) => {
-  const { studentId, jobId, status } = req.body;
+  const { studentId, jobId, status = 'pending' } = req.body;
+
   try {
+    // Check if student exists and get their CGPA
+    const eligible = await prisma.user.findUnique({
+      where: { id: studentId },
+      select: { cgpa: true },
+    });
+
+    if (!eligible) {
+      return res.status(404).json({ error: 'Student not found' });
+    }
+
+    const { cgpa } = eligible;
+
+    // Check if job exists and get its CGPA cutoff
+    const check = await prisma.job.findUnique({
+      where: { id: jobId },
+      select: { cgpaCutoff: true },
+    });
+
+    if (!check) {
+      return res.status(404).json({ error: 'Job not found' });
+    }
+
+    const { cgpaCutoff } = check;
+
+    // Compare student's CGPA with job's cutoff
+    if (cgpa < parseFloat(cgpaCutoff)) {
+      return res.status(400).json({
+        error: 'Student CGPA is below the required cutoff',
+        data: { studentCgpa: cgpa, jobCgpaCutoff: cgpaCutoff },
+      });
+    }
+
+    // Create the application
     const application = await prisma.application.create({
       data: { studentId, jobId, status },
     });
-    res.json(application);
+
+    res.status(201).json(application);
   } catch (error) {
-    res.status(400).json({ error: error.message });
+    res.status(500).json({ error: error.message });
   }
 });
+
+
+///////////////////
 
 // Get all Jobs
 app.get('/jobs', async (req, res) => {
@@ -215,6 +297,60 @@ app.delete('/jobs/:id', async (req, res) => {
     res.status(500).json({ error: error.message });
   }
 });
+
+
+///////////////////////update job details///////////////////////
+app.put('/jobs/update/:id', async (req, res) => {
+  console.log("Updating job...");
+  
+  const { id } = req.params;
+  const dataToUpdate = req.body; // Assuming body contains the fields to update
+  try {
+    const updatedJob = await prisma.job.update({
+      where: { id: parseInt(id) },
+      data: dataToUpdate,
+    });
+    console.log("Job updated:", updatedJob);
+    res.json(updatedJob);
+  } catch (error) {
+    console.error("Error updating job:", error);
+    res.status(400).json({ error: error.message });
+  }
+});
+
+
+//////////////////list ////////////////////////
+// Add this route to your index.js (backend)
+
+app.get('/jobs/list/:jobId/applications', async (req, res) => {
+  const { jobId } = req.params;
+  try {
+    const applications = await prisma.application.findMany({
+      where: { jobId: parseInt(jobId) },
+      include: {
+        student: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
+            cgpa: true, // Include CGPA if needed
+          },
+        },
+        job: true // Include job details if needed
+      },
+    });
+
+    res.json(applications);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+/////////////////////////////////////////////
+
+
+
+
+/////////////////////////////////////////////////////////////
 
 
 const PORT = 3000;
