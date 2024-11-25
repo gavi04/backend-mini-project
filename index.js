@@ -10,6 +10,10 @@ const JWT_SECRET = 'helloworld';
 
 app.use(express.json());
 app.use(cors());
+//heath check
+app.get('/health', (req, res) => {
+  res.status(200).send({ status: 'ok' });
+});
 // Create a User
 app.post('/signup', async (req, res) => {
   const { email, password,  name } = req.body;
