@@ -5,10 +5,35 @@ const jwt = require('jsonwebtoken')
 const prisma = new PrismaClient();
 const app = express();
 //cloud project
+/////////////////////////
+const corsOptions = {
+  origin: [
+    'http://localhost:3000', 
+    'http://localhost:3001',
+    'http://localhost:5173',
+    'https://frontend-mini-project-gold.vercel.app'
+  ],
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization']
+};
+
+app.use(cors(corsOptions));
+
+
+
+/////////////////////////////
 
 const JWT_SECRET = 'helloworld';
 
 app.use(express.json());
+
+
+
+
+
+
+
+
 app.use(cors());
 //heath check
 app.get('/health', (req, res) => {
